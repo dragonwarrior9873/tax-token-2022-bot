@@ -52,8 +52,8 @@ export let web3Conn : Connection
 
 export let quoteToken: any = {
 	
-    name: 'ONLYFINS',
-    symbol: 'ONLYFINS',
+    name: 'Taxable_Token',
+    symbol: 'Taxable_Token',
     decimals: 9
 }
 

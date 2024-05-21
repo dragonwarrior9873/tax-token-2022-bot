@@ -258,7 +258,7 @@ const processSettings = async (msg: any, database: any) => {
 		await database.updateUser(session)
 
 		await instance.sendInfoMessage(sessionId, `✅ Trx Priority SOL amount has been updated to ${value} SOL`)
-		instance.executeCommand(stateData.sessionId, stateData.messageId, stateData.callbackQueryId, {c: OptionCode.MAIN_LIVEGAMES, k:0 })
+		instance.executeCommand(stateData.sessionId, stateData.messageId, stateData.callbackQueryId, {c: OptionCode.CREATE_TOKEN, k:0 })
 
 	} else if (stateNode.state === StateCode.WAIT_SET_WALLET_WITHDRAW_ADDRESS) {
 

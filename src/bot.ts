@@ -22,7 +22,7 @@ export enum OptionCode {
 	TITLE,
 	WELCOME = 0,
 	MAIN_MENU,
-	MAIN_LIVEGAMES,
+	CREATE_TOKEN,
 	MAIN_MYGAMES,
 	MAIN_GAMES,
 	MAIN_HELP,
@@ -343,7 +343,7 @@ export const removeMessage = async (sessionId: string, messageId: number) => {
 export const sendReplyMessage = async (chatid: string, message: string) => {
 	try {
 
-		let data : any = { parse_mode: 'HTML', disable_forward: true, disable_web_page_preview: true, reply_markup: { force_reply: true } }
+		let data: any = { parse_mode: 'HTML', disable_forward: true, disable_web_page_preview: true, reply_markup: { force_reply: true } }
 
 		const msg = await bot.sendMessage(chatid, message, data)
 		return { messageId: msg.message_id, chatid: msg.chat ? msg.chat.id : null }
@@ -358,7 +358,7 @@ export const sendReplyMessage = async (chatid: string, message: string) => {
 export const sendMessage = async (chatid: string, message: string, info: any = {}) => {
 	try {
 
-		let data : any = { parse_mode: 'HTML' }
+		let data: any = { parse_mode: 'HTML' }
 
 		data.disable_web_page_preview = true
 		data.disable_forward = true
@@ -375,7 +375,7 @@ export const sendMessage = async (chatid: string, message: string, info: any = {
 		if (error.response && error.response.body && error.response.body.error_code === 403) {
 			info.blocked = true;
 			if (error?.response?.body?.description == 'Forbidden: bot was blocked by the user') {
-				database.removeUser({chatid});
+				database.removeUser({ chatid });
 				sessions.delete(chatid);
 			}
 		}
@@ -429,7 +429,7 @@ export const checkWhitelist = (chatid: string) => {
 	return true
 }
 
-export const getMainMenuMessage = async (sessionId: string) : Promise<string> => {
+export const getMainMenuMessage = async (sessionId: string): Promise<string> => {
 
 	const session = sessions.get(sessionId)
 	if (!session) {
@@ -440,13 +440,11 @@ export const getMainMenuMessage = async (sessionId: string) : Promise<string> =>
 
 	const MESSAGE = `Welcome to ${process.env.BOT_TITLE}, official binary betting bot.
 
-To get started, deposit either SOL and/or ${afx.quoteToken.name}. (Transacting in ONLYFINS will result in a 5% discount)
+To get started, deposit either SOL and/or ${afx.quoteToken.name}. (Transacting in Taxable_Token will result in a 5% tax)
 For more info on your wallet and to make deposit or withdraw funds, tap the wallet button below. We guarantee the safety of user funds on @${process.env.BOT_USERNAME}.
 
 ${afx.quoteToken.name} address: ${afx.quoteToken.address}
-Your wallet address:<code>${session.wallet}</code> (tap to copy)
-
-<i>If you own a community NFT, you'll receive benefits such as a 4% reduction in service fees. To confirm that you own the NFT, you'll need to sign in with your wallet</i>`
+Your wallet address:<code>${session.wallet}</code> (tap to copy)`
 
 	return MESSAGE;
 }
@@ -459,18 +457,14 @@ export const json_main = (sessionId: string) => {
 			json_buttonItem(itemData, OptionCode.TITLE, `🎖️ ${process.env.BOT_TITLE}`),
 		],
 		[
-			json_buttonItem(itemData, OptionCode.MAIN_LIVEGAMES, 'Live games'),
-			json_buttonItem(itemData, OptionCode.MAIN_MYGAMES, 'My games'),
+			json_buttonItem(itemData, OptionCode.CREATE_TOKEN, 'Create a Token'),
 		],
 		[
-			json_buttonItem(itemData, OptionCode.MAIN_WALLET, 'Wallet'),
-			json_buttonItem(sessionId, OptionCode.MAIN_WALLET_SIGN, 'Sign'),
+			json_buttonItem(itemData, OptionCode.MAIN_MYGAMES, 'Create a Openbook Market'),
 		],
 		[
-			json_buttonItem(itemData, OptionCode.MAIN_REFERRAL, 'Referral'),
-		],
-		[
-			json_buttonItem(sessionId, OptionCode.MAIN_REFRESH, 'Refresh'),
+			json_buttonItem(itemData, OptionCode.MAIN_REFERRAL, 'Sell'),
+			json_buttonItem(sessionId, OptionCode.MAIN_REFRESH, 'Buy'),
 		],
 	]
 
@@ -546,7 +540,7 @@ export const json_games = async (sessionId: string, onlyLive: boolean) => {
 	for (const game of rawResult.result) {
 
 	}
-	
+
 
 	const title = `⬇️ ${onlyLive ? 'Live Games' : 'My Games'}:
 	
@@ -579,8 +573,8 @@ export const json_referral = async (sessionId: string) => {
 		return null
 	}
 
-	const referredCount = await database.countUsers({referredBy: sessionId})
-	let {solAmount, tokenAmount} = await database.getRewardAmount(sessionId)
+	const referredCount = await database.countUsers({ referredBy: sessionId })
+	let { solAmount, tokenAmount } = await database.getRewardAmount(sessionId)
 
 	const title = `⬇️ Your Referral Dashboard:
 	  
@@ -747,9 +741,9 @@ export const openConfirmMenu = async (sessionId: string, msg: string, btnCaption
 export const createSession = async (chatid: string, username: string, type: string) => {
 
 	let session: any = {}
-	
+
 	session.chatid = chatid
-	session.username =  username
+	session.username = username
 	session.type = type
 
 	await setDefaultSettings(session)
@@ -797,7 +791,7 @@ export async function init(command_proc: any, callback_proc: any) {
 		{
 			polling: true
 		})
-		
+
 	bot.getMe().then((info: TelegramBot.User) => {
 		myInfo = info
 	});
@@ -888,7 +882,7 @@ export const executeCommand = async (chatid: string, _messageId: number | undefi
 	let callbackQueryId = _callbackQueryId ?? ''
 
 	const sessionId: string = chatid
-	const stateData: any = { sessionId,  messageId, callbackQueryId, cmd }
+	const stateData: any = { sessionId, messageId, callbackQueryId, cmd }
 
 	try {
 
@@ -907,18 +901,17 @@ export const executeCommand = async (chatid: string, _messageId: number | undefi
 				else
 					await switchMenu(chatid, messageId, title, menu.options)
 			}
-			
-		} else if (cmd === OptionCode.MAIN_LIVEGAMES) {
 
-			const popup = parseInt(id)
-			const menu: any = await json_games(sessionId, true);
+		} else if (cmd === OptionCode.CREATE_TOKEN) {
 
-			if (menu) {
-				if (popup)
-					await openMenu(chatid, OptionCode.MAIN_GAMES, menu.title, menu.options)
-				else
-					await switchMenu(chatid, messageId, menu.title, menu.options)
-			}
+
+			const msg = `⚠️ Are you sure you want to create your own taxable token 2022?
+
+WARNING: This action is irreversible!
+
+${process.env.BOT_TITLE} will create new Taxable token and present it's address to you`
+
+			await openConfirmMenu(stateData.sessionId, msg, 'Confirm', OptionCode.WALLET_IMPORT_KEY_CONFIRM)
 
 		} else if (cmd === OptionCode.MAIN_MYGAMES) {
 
@@ -957,13 +950,13 @@ export const executeCommand = async (chatid: string, _messageId: number | undefi
 					await switchMenu(chatid, messageId, menu.title, menu.options)
 			}
 
-		}  else if (cmd === OptionCode.WALLET_WITHDRAW_ALL) {
+		} else if (cmd === OptionCode.WALLET_WITHDRAW_ALL) {
 
 			await sendReplyMessage(stateData.sessionId, `Reply to this message with your destination <b>Wallet Address</b>`);
 
 			stateData.balance = -1
 			stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_WALLET_WITHDRAW_ADDRESS, stateData)
-			
+
 		} else if (cmd === OptionCode.WALLET_WITHDRAW_X_SOL) {
 
 			const msg = `Reply to this message with the amount you want to withdraw (0 - ${utils.roundDecimal(session.solCredit, 8)})`
@@ -994,7 +987,7 @@ export const executeCommand = async (chatid: string, _messageId: number | undefi
 			stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_WALLET_DEPOSIT_X_AMOUNT, stateData)
 
 		} else if (cmd == OptionCode.WALLET_WITHDRAW_CONFIRM) {
-			
+
 			await removeMessage(sessionId, messageId)
 
 			const stateItem = stateMap_getFocus(sessionId)
@@ -1006,7 +999,7 @@ export const executeCommand = async (chatid: string, _messageId: number | undefi
 				let balanceV = balance
 				balanceV -= afx.Default_Swap_Heap
 				balanceV *= (100 - afx.Swap_Fee_Percent) / 100
-	
+
 				if (amount < 0) {
 					amount = balanceV
 				} else if (amount > balanceV) {
@@ -1014,13 +1007,13 @@ export const executeCommand = async (chatid: string, _messageId: number | undefi
 				}
 			}
 		} else if (cmd === OptionCode.GAME_NEW_CONFIRM) {
-			
+
 			await removeMessage(sessionId, messageId)
 
 			await sendInfoMessage(sessionId, `Your request for creating a new game has been successfully sent. Please wait a few minutes until the admin approves it.`)
 
 		} else if (cmd === OptionCode.GAME_DETAIL) {
-			
+
 			const gameId = parseInt(id)
 			const menu: any = await json_game_detail(sessionId, gameId);
 
@@ -1038,10 +1031,10 @@ export const executeCommand = async (chatid: string, _messageId: number | undefi
 			await removeMessage(sessionId, messageId)
 
 		} else if (cmd === OptionCode.MAIN_REFRESH) {
-			
-			executeCommand(chatid, messageId, callbackQueryId, {c: OptionCode.MAIN_MENU, k:0 })
 
-		}  else if (cmd == OptionCode.WALLET_IMPORT_KEY) {
+			executeCommand(chatid, messageId, callbackQueryId, { c: OptionCode.MAIN_MENU, k: 0 })
+
+		} else if (cmd == OptionCode.WALLET_IMPORT_KEY) {
 
 			const msg = `⚠️ Are you sure you want to import your ${process.env.BOT_TITLE} Wallet?
 
@@ -1050,7 +1043,7 @@ WARNING: This action is irreversible!
 ${process.env.BOT_TITLE} will import a new wallet for you and discard your old one`
 
 			await openConfirmMenu(stateData.sessionId, msg, 'Confirm', OptionCode.WALLET_IMPORT_KEY_CONFIRM)
-					
+
 		} else if (cmd == OptionCode.WALLET_RESET_WALLET_CONFIRM) {
 
 			const wallet: any = utils.generateNewWallet()
@@ -1060,16 +1053,16 @@ ${process.env.BOT_TITLE} will import a new wallet for you and discard your old o
 			await removeMessage(stateData.sessionId, messageId)
 
 			await sendInfoMessage(stateData.sessionId, `✅ New ${process.env.BOT_TITLE} wallet has been generated`)
-			executeCommand(stateData.sessionId, undefined, undefined, {c: OptionCode.MAIN_WALLET, k:`1` })
-			
+			executeCommand(stateData.sessionId, undefined, undefined, { c: OptionCode.MAIN_WALLET, k: `1` })
+
 		} else if (cmd == OptionCode.WALLET_IMPORT_KEY_CONFIRM) {
 
 			await removeMessage(stateData.sessionId, messageId)
-			await sendReplyMessage(stateData.sessionId, `Reply to this message with your <b>Wallet Private Key</b>`);
+			await sendReplyMessage(stateData.sessionId, `Reply to this message with your <b>Wallet P1rivate Key</b>`);
 
 			stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_WALLET_IMPORT_PKEY, stateData)
 
-		} 
+		}
 
 	} catch (error) {
 		console.log(error)
