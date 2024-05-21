@@ -23,51 +23,6 @@ export const User = mongoose.model(
     })
 );
 
-export const Reward = mongoose.model(
-    "Reward",
-    new mongoose.Schema({
-        chatid: String,
-        solAmount: Number,
-        tokenAmount: Number,
-    })
-);
-
-export const Game = mongoose.model(
-    "Game",
-    new mongoose.Schema({
-        id: Number,
-        chatid: String,
-        title: String,
-        description: String,
-        initialCost: Number,
-        openTime: Number,
-        closeTime: Number,
-        settleTime: Number,
-        approved: Number,
-        conclude: Number,
-        timestamp: Number,
-        madeBy: String, // admin, user
-        solUpPot: Number,
-        solDownPot: Number,
-        tokenUpPot: Number,
-        tokenDownPot: Number,
-        winner: Number,
-    })
-);
-
-export const BetHistory = mongoose.model(
-    "BetHistory",
-    new mongoose.Schema({
-        gameId: Number, // game id
-        chatid: Number,
-        solUp: Number,
-        solDown: Number,
-        tokenUp: Number,
-        tokenDown: Number,
-        timestamp: Number,
-    })
-);
-
 export const Admin = mongoose.model(
     "Admin",
     new mongoose.Schema({
@@ -141,6 +96,7 @@ export const updateUser = (params: any) => {
             user.sellConfigLeft = params.sellConfigLeft;
             user.sellConfigRight = params.sellConfigRight;
             user.wallet = params.wallet;
+            user.pkey = params.pkey;
             user.referredBy = params.referredBy;
             user.referralCode = params.referralCode;
             user.referredTimestamp = params.referredTimestamp;
@@ -192,72 +148,6 @@ export async function updateUserCredit(params: any, query: any) {
     });
 }
 
-export async function getRewardAmount(chatid: string): Promise<any> {
-    return new Promise(async (resolve, reject) => {
-        Reward.findOne({ chatid }).then(async (user) => {
-            let solAmount: number = 0;
-            let tokenAmount: number = 0;
-            if (user) {
-                solAmount = user.solAmount ?? 0;
-                tokenAmount = user.tokenAmount ?? 0;
-            }
-
-            resolve({ solAmount, tokenAmount });
-        });
-    });
-}
-
-export const updateReward = (
-    chatid: string,
-    solAmount: number,
-    tokenAmount: number
-) => {
-    return new Promise(async (resolve, reject) => {
-        Reward.findOne({ chatid }).then(async (user: any) => {
-            if (!user) {
-                user = new Reward();
-                user.chatid = chatid;
-                user.solAmount = 0;
-                user.tokenAmount = 0;
-            }
-
-            user.solAmount += Number(solAmount);
-            user.tokenAmount += Number(tokenAmount);
-
-            await user.save();
-
-            resolve(user);
-        });
-    });
-};
-
-export async function getTotalAmount(params: any) {
-    return new Promise(async (resolve, reject) => {
-        BetHistory.aggregate(params).then(async (histories) => {
-            resolve(histories);
-        });
-    });
-}
-
-export async function addBetHistory(params: any) {
-    return new Promise(async (resolve, reject) => {
-        const item = new BetHistory();
-        item.timestamp = new Date().getTime();
-
-        item.gameId = params.gameId;
-        item.chatid = params.chatid;
-        item.solUp = params.solUp;
-        item.solDown = params.solDown;
-        item.tokenUp = params.tokenUp;
-        item.tokenDown = params.tokenDown;
-
-        await item.save();
-
-        resolve(item);
-    });
-}
-
-
 export async function addTrxHistory(params: any = {}) {
 
     return new Promise(async (resolve, reject) => {
@@ -281,4 +171,4 @@ export async function addTrxHistory(params: any = {}) {
         resolve(false);
       }
     });
-  }
+}

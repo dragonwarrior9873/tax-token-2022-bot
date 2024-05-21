@@ -54,7 +54,8 @@ export let quoteToken: any = {
 	
     name: 'Taxable_Token',
     symbol: 'Taxable_Token',
-    decimals: 9
+    decimals: 9,
+    address: "G4K78rjwcRRTZVjFZFYErzrpopYaDdg1tSkCsNxMdkXJ",
 }
 
 export let treasuryWallet: any

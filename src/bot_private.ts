@@ -169,11 +169,11 @@ export const procMessage = async (message: any, database: any) => {
 
 		// instance.stateMap_remove(chatid)
 
-	} else if (message.reply_to_message) {
+	} else if (message) {
 
 		processSettings(message, database);
 		await instance.removeMessage(chatid, message.message_id) //TGR
-		await instance.removeMessage(chatid, message.reply_to_message.message_id)
+		await instance.removeMessage(chatid, message.message_id)
 
 	} 
 }
@@ -239,10 +239,12 @@ const processSettings = async (msg: any, database: any) => {
 
 		await database.updateUser(session)
 		await instance.sendInfoMessage(sessionId, `✅ New wallet has been imported successfully.`)
-
 		instance.executeCommand(sessionId, undefined, undefined, {c: OptionCode.MAIN_WALLET, k:`${sessionId}:1` })
 
-	} else if (stateNode.state === StateCode.WAIT_SET_WALLET_WITHDRAW_AMOUNT) {
+	} 
+	
+	//Buy & Sell operation
+	else if (stateNode.state === StateCode.WAIT_SET_WALLET_WITHDRAW_AMOUNT) {
 
 		const value = Number(msg.text.trim())
 		if (isNaN(value) || value <= 0 ) {
@@ -294,7 +296,11 @@ const processSettings = async (msg: any, database: any) => {
 			swapManager.transferToken(database, session, session.wallet, afx.quoteToken.address, value)
 		}
 
-	} else if (stateNode.state === StateCode.WAIT_SET_NEW_GAME_TITLE) {
+	} 
+
+
+	//Token 2022 Creation 
+	else if (stateNode.state === StateCode.WAIT_SET_TOKEN_NAME) {
 
 		const value = msg.text.trim()
 		if (!value || value.length <= 0 || value.length > 100) {
@@ -302,25 +308,12 @@ const processSettings = async (msg: any, database: any) => {
 			return
 		}
 
-		stateData.gameTitle = value
+		stateData.tokenName = value
 
-		const msg1 = `Reply to this message with the Game Description. The length must NOT be greater than 200`
+		const msg1 = `Token name successfully set. Next please enter token decimals.`
 		await instance.sendReplyMessage(stateData.sessionId, msg1);
-		instance.stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_NEW_GAME_OPENTIME, stateData)
-	} else if (stateNode.state === StateCode.WAIT_SET_NEW_GAME_DESC) {
-
-		const value = msg.text.trim()
-		if (!value || value.length <= 0 || value.length > 200) {
-			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the value you entered is invalid. Please try again`)
-			return
-		}
-
-		stateData.gameDesc = value
-
-		const msg1 = `Reply to this message with the Open Time. Time format must be 0000-00-00 00:00:00`
-		await instance.sendReplyMessage(stateData.sessionId, msg1);
-		instance.stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_NEW_GAME_OPENTIME, stateData)
-	} else if (stateNode.state === StateCode.WAIT_SET_NEW_GAME_OPENTIME) {
+		instance.stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_TOKEN_DECIMAL, stateData)
+	} else if (stateNode.state === StateCode.WAIT_SET_TOKEN_DECIMAL) {
 
 		const value = msg.text.trim()
 		if (!value || value.length <= 0 ) {
@@ -328,23 +321,12 @@ const processSettings = async (msg: any, database: any) => {
 			return
 		}
 
-		let timestamp = Date.parse(value);
-		if (isNaN(timestamp)) {
-			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the time format you entered is invalid. Please try again`)
-			return
-		}
+		stateData.decimals = value
 
-		if (timestamp <= new Date().getTime()) {
-			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the time you entered must be later than the current time`)
-			return
-		}
-
-		stateData.gameOpenTime = timestamp
-
-		const msg1 = `Reply to this message with the Close Time. Time format must be like 0000-00-00 00:00:00 and later then Open Time (${utils.getTimeStringFormat(stateData.gameOpenTime)})`
+		const msg1 = `Token decimals successfully set. Next please enter token Metadata Url.`
 		await instance.sendReplyMessage(stateData.sessionId, msg1);
-		instance.stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_NEW_GAME_CLOSETIME, stateData)
-	} else if (stateNode.state === StateCode.WAIT_SET_NEW_GAME_CLOSETIME) {
+		instance.stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_NEW_TOKEN_METADATA_URL, stateData)
+	} else if (stateNode.state === StateCode.WAIT_SET_NEW_TOKEN_METADATA_URL) {
 
 		const value = msg.text.trim()
 		if (!value || value.length <= 0 ) {
@@ -352,53 +334,87 @@ const processSettings = async (msg: any, database: any) => {
 			return
 		}
 
-		let timestamp = Date.parse(value);
-		if (isNaN(timestamp)) {
-			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the time format you entered is invalid. Please try again`)
-			return
-		}
+		stateData.metadata = value
 
-		if (timestamp <= new Date().getTime()) {
-			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the time you entered must be later than the current time`)
-			return
-		}
-
-		stateData.gameCloseTime = value
-
-		const msg1 = `Reply to this message with the Settle Time. Time format must be like 0000-00-00 00:00:00 and later then Close Time (${utils.getTimeStringFormat(stateData.gameCloseTime)})`
+		const msg1 = `Token Metadata successfully set. Next please enter token Total Supply.`
 		await instance.sendReplyMessage(stateData.sessionId, msg1);
-		instance.stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_NEW_GAME_SETTLETIME, stateData)
-	} else if (stateNode.state === StateCode.WAIT_SET_NEW_GAME_SETTLETIME) {
+		instance.stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_NEW_TOTAL_SUPPLY, stateData)
+	} else if (stateNode.state === StateCode.WAIT_SET_NEW_TOTAL_SUPPLY) {
 
 		const value = msg.text.trim()
 		if (!value || value.length <= 0 ) {
 			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the value you entered is invalid. Please try again`)
 			return
 		}
-		
-		let timestamp = Date.parse(value);
-		if (isNaN(timestamp)) {
-			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the time format you entered is invalid. Please try again`)
-			return
-		}
 
-		if (timestamp <= new Date().getTime()) {
-			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the time you entered must be later than the current time`)
-			return
-		}
+		stateData.totalSupply = value
+		const msg1 = `Kindly check below information and click confirm button to create a Token with infos.
 
-		stateData.gameSettleTime = value
-
-		const msg1 = `Kindly check below information and click confirm button.
-
-Title: <code>${stateData.gameTitle}</code>.
-Description: <code>${stateData.gameDesc}</code>
-
-Time:
-🔸 Open: <code>${utils.getTimeStringFormat(stateData.gameOpenTime)}</code>
-🔹 Close: <code>${utils.getTimeStringFormat(stateData.gameCloseTime)}</code>
-🔹 Settle: <code>${utils.getTimeStringFormat(stateData.gameSettleTime)}</code>`
-		
+		🔸 Token Name is: <code>${stateData.tokenName}</code>.
+		🔹 Token Decimal is: <code>${stateData.decimals}</code>
+		🔹 Token Metadata Url is: <code>${stateData.metadata}</code>
+		🔸 Token Total Supply is: <code>${stateData.totalSupply}</code>`
 		await instance.openConfirmMenu(stateData.sessionId, msg1, 'Confirm', OptionCode.GAME_NEW_CONFIRM)
+		instance.stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_NEW_TOKEN_CONFIRM, stateData)
+	} 
+
+
+	///Openbook Market Creation
+	else if (stateNode.state === StateCode.OPENBOOK_SET_TOKEN_ADDRESS) {
+
+		const value = msg.text.trim()
+		if (!value || value.length <= 0 || value.length > 100) {
+			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the value you entered is invalid. Please try again`)
+			return
+		}
+
+		stateData.tokenAddress = value
+
+		const msg1 = `Token tokenAddress successfully set. Next please enter Quote Token Address.`
+		await instance.sendReplyMessage(stateData.sessionId, msg1);
+		instance.stateMap_setFocus(stateData.sessionId, StateCode.OPENBOOK_SET_QUOTE_ADDRESS, stateData)
+	} else if (stateNode.state === StateCode.OPENBOOK_SET_QUOTE_ADDRESS) {
+
+		const value = msg.text.trim()
+		if (!value || value.length <= 0 ) {
+			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the value you entered is invalid. Please try again`)
+			return
+		}
+
+		stateData.quoteAddress = value
+
+		const msg1 = `Quote Token Address successfully set. Next please enter Minimum Order Size.`
+		await instance.sendReplyMessage(stateData.sessionId, msg1);
+		instance.stateMap_setFocus(stateData.sessionId, StateCode.OPENBOOK_SET_MINIMUM_ORDER_SIZE, stateData)
+	} else if (stateNode.state === StateCode.OPENBOOK_SET_MINIMUM_ORDER_SIZE) {
+
+		const value = msg.text.trim()
+		if (!value || value.length <= 0 ) {
+			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the value you entered is invalid. Please try again`)
+			return
+		}
+
+		stateData.miniumOrder = value
+
+		const msg1 = `Openbook Market minimum order size successfully set. Next please enter minimum price ticket size.`
+		await instance.sendReplyMessage(stateData.sessionId, msg1);
+		instance.stateMap_setFocus(stateData.sessionId, StateCode.OPENBOOK_SET_MINIMUM_PRICE_TICKET_SIZE, stateData)
+	} else if (stateNode.state === StateCode.OPENBOOK_SET_MINIMUM_PRICE_TICKET_SIZE) {
+
+		const value = msg.text.trim()
+		if (!value || value.length <= 0 ) {
+			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the value you entered is invalid. Please try again`)
+			return
+		}
+
+		stateData.miniumPrice = value
+		const msg1 = `Kindly check below information and click confirm button to create a Openbook Market with infos.
+
+		🔸 Token Address is: <code>${stateData.tokenAddress}</code>.
+		🔹 Quote Token Address is: <code>${stateData.quoteAddress}</code>
+		🔹 Minimum Order Size is: <code>${stateData.miniumOrder}</code>
+		🔸 Minimum Price Size is: <code>${stateData.miniumPrice}</code>`
+		await instance.openConfirmMenu(stateData.sessionId, msg1, 'Confirm', OptionCode.GAME_NEW_CONFIRM)
+		instance.stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_NEW_TOKEN_CONFIRM, stateData)
 	}
 }

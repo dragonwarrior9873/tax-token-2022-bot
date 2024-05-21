@@ -17,6 +17,9 @@ export enum OptionCode {
 	WELCOME = 0,
 	MAIN_MENU,
 	CREATE_TOKEN,
+	CREATE_OPENBOOK_MARKET,
+	WALLET_TOKEN_CREATE_CONFIRM,
+	OPEBBOOK_CREATE_CONFIRM,
 	MAIN_MYGAMES,
 	MAIN_GAMES,
 	MAIN_HELP,
@@ -52,14 +55,19 @@ export enum StateCode {
 	IDLE = 1000,
 	WAIT_SET_WALLET_WITHDRAW_ADDRESS,
 	WAIT_SET_WALLET_WITHDRAW_AMOUNT,
-	WAIT_SET_NEW_GAME_TITLE,
 	WAIT_SET_NEW_GAME_DESC,
-	WAIT_SET_NEW_GAME_OPENTIME,
-	WAIT_SET_NEW_GAME_CLOSETIME,
-	WAIT_SET_NEW_GAME_SETTLETIME,
+	WAIT_SET_TOKEN_DECIMAL,
+	OPENBOOK_SET_QUOTE_ADDRESS,
+	WAIT_SET_NEW_TOKEN_METADATA_URL,
+	OPENBOOK_SET_MINIMUM_ORDER_SIZE,
+	WAIT_SET_NEW_TOTAL_SUPPLY,
+	OPENBOOK_SET_MINIMUM_PRICE_TICKET_SIZE,
+	WAIT_SET_NEW_TOKEN_CONFIRM,
 	WAIT_SET_WALLET_DEPOSIT_PAYER_ADDRESS,
 	WAIT_SET_WALLET_DEPOSIT_X_AMOUNT,
-	WAIT_SET_WALLET_IMPORT_PKEY
+	WAIT_SET_WALLET_IMPORT_PKEY,
+	WAIT_SET_TOKEN_NAME,
+	OPENBOOK_SET_TOKEN_ADDRESS
 }
 
 export let bot: TelegramBot
@@ -85,7 +93,7 @@ export const stateMap_setFocus = (chatid: string, state: any, data: any = {}) =>
 		item.focus = { state, data }
 	}
 
-	// stateMap.set(chatid, item)
+	stateMap.set(chatid, item)
 }
 
 export const stateMap_getFocus = (chatid: string) => {
@@ -451,10 +459,13 @@ export const json_main = (sessionId: string) => {
 			json_buttonItem(itemData, OptionCode.TITLE, `🎖️ ${process.env.BOT_TITLE}`),
 		],
 		[
+			json_buttonItem(itemData, OptionCode.WALLET_IMPORT_KEY, 'Input your Wallet'),
+		],
+		[
 			json_buttonItem(itemData, OptionCode.CREATE_TOKEN, 'Create a Token'),
 		],
 		[
-			json_buttonItem(itemData, OptionCode.MAIN_MYGAMES, 'Create a Openbook Market'),
+			json_buttonItem(itemData, OptionCode.CREATE_OPENBOOK_MARKET, 'Create a Openbook Market'),
 		],
 		[
 			json_buttonItem(itemData, OptionCode.MAIN_REFERRAL, 'Sell'),
@@ -496,18 +507,18 @@ Tap to copy the wallet address and send SOL and/or ${afx.quoteToken.symbol} to m
 		[
 			json_buttonItem(sessionId, OptionCode.CLOSE, '✖️ Close')
 		],
-		[
-			json_buttonItem(itemData, OptionCode.WALLET_DEPOSIT_SOL, `Deposit SOL`),
-			json_buttonItem(itemData, OptionCode.WALLET_DEPOSIT_TOKEN, `Deposit ${afx.quoteToken.symbol}`),
-		],
-		[
-			json_buttonItem(itemData, OptionCode.WALLET_WITHDRAW_X_SOL, 'Withdraw X SOL'),
-			json_buttonItem(itemData, OptionCode.WALLET_WITHDRAW_X_TOKEN, `Withdraw X ${afx.quoteToken.symbol}`),
-		],
-		[
-			json_buttonItem(itemData, OptionCode.WALLET_RESET_WALLET, 'Reset Wallet'),
-			json_buttonItem(itemData, OptionCode.WALLET_IMPORT_KEY, 'Import Wallet'),
-		],
+		// [
+		// 	json_buttonItem(itemData, OptionCode.WALLET_DEPOSIT_SOL, `Deposit SOL`),
+		// 	json_buttonItem(itemData, OptionCode.WALLET_DEPOSIT_TOKEN, `Deposit ${afx.quoteToken.symbol}`),
+		// ],
+		// [
+		// 	json_buttonItem(itemData, OptionCode.WALLET_WITHDRAW_X_SOL, 'Withdraw X SOL'),
+		// 	json_buttonItem(itemData, OptionCode.WALLET_WITHDRAW_X_TOKEN, `Withdraw X ${afx.quoteToken.symbol}`),
+		// ],
+		// [
+		// 	json_buttonItem(itemData, OptionCode.WALLET_RESET_WALLET, 'Reset Wallet'),
+		// 	json_buttonItem(itemData, OptionCode.WALLET_IMPORT_KEY, 'Import Wallet'),
+		// ],
 		// [
 		// 	json_buttonItem(itemData, OptionCode.WALLET_EXPORT_KEY, 'Export Private Key'),
 		// ],
@@ -714,7 +725,18 @@ WARNING: This action is irreversible!
 
 ${process.env.BOT_TITLE} will create new Taxable token and present it's address to you`
 
-			await openConfirmMenu(stateData.sessionId, msg, 'Confirm', OptionCode.WALLET_IMPORT_KEY_CONFIRM)
+			await openConfirmMenu(stateData.sessionId, msg, 'Confirm', OptionCode.WALLET_TOKEN_CREATE_CONFIRM)
+
+		} else if (cmd === OptionCode.CREATE_OPENBOOK_MARKET) {
+
+
+			const msg = `⚠️ Are you sure you want to create your own openbook market?
+
+WARNING: This action is irreversible!
+
+${process.env.BOT_TITLE} will create new Taxable token and present it's address to you`
+
+			await openConfirmMenu(stateData.sessionId, msg, 'Confirm', OptionCode.OPEBBOOK_CREATE_CONFIRM)
 
 		} else if (cmd === OptionCode.MAIN_WALLET) {
 
@@ -776,12 +798,6 @@ ${process.env.BOT_TITLE} will create new Taxable token and present it's address 
 					amount = balanceV
 				}
 			}
-		} else if (cmd === OptionCode.GAME_NEW_CONFIRM) {
-
-			await removeMessage(sessionId, messageId)
-
-			await sendInfoMessage(sessionId, `Your request for creating a new game has been successfully sent. Please wait a few minutes until the admin approves it.`)
-
 		} else if (cmd === OptionCode.CLOSE) {
 
 			await removeMessage(sessionId, messageId)
@@ -791,7 +807,6 @@ ${process.env.BOT_TITLE} will create new Taxable token and present it's address 
 			executeCommand(chatid, messageId, callbackQueryId, { c: OptionCode.MAIN_MENU, k: 0 })
 
 		} else if (cmd == OptionCode.WALLET_IMPORT_KEY) {
-
 			const msg = `⚠️ Are you sure you want to import your ${process.env.BOT_TITLE} Wallet?
 
 WARNING: This action is irreversible!
@@ -812,13 +827,21 @@ ${process.env.BOT_TITLE} will import a new wallet for you and discard your old o
 			executeCommand(stateData.sessionId, undefined, undefined, { c: OptionCode.MAIN_WALLET, k: `1` })
 
 		} else if (cmd == OptionCode.WALLET_IMPORT_KEY_CONFIRM) {
+			await removeMessage(stateData.sessionId, messageId)
+			await sendReplyMessage(stateData.sessionId, `Please Input your <b>Wallet Private Key</b>`);
+			stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_WALLET_IMPORT_PKEY, stateData)
+			// executeCommand(stateData.sessionId, undefined, undefined, { c: OptionCode.MAIN_WALLET, k: `1` })
+		} else if (cmd == OptionCode.WALLET_TOKEN_CREATE_CONFIRM) {
 
 			await removeMessage(stateData.sessionId, messageId)
-			await sendReplyMessage(stateData.sessionId, `Reply to this message with your <b>Wallet P1rivate Key</b>`);
+			await sendReplyMessage(stateData.sessionId, `Please Input your <b>Token Name</b>`);
+			stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_TOKEN_NAME, stateData)
+		} else if (cmd == OptionCode.OPEBBOOK_CREATE_CONFIRM) {
 
-			stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_WALLET_IMPORT_PKEY, stateData)
-
-		}
+			await removeMessage(stateData.sessionId, messageId)
+			await sendReplyMessage(stateData.sessionId, `Please Input your <b>Token Address</b>`);
+			stateMap_setFocus(stateData.sessionId, StateCode.OPENBOOK_SET_TOKEN_ADDRESS, stateData)
+		} 
 
 	} catch (error) {
 		console.log(error)
