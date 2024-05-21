@@ -2,8 +2,6 @@ import * as instance from './bot'
 import {StateCode, OptionCode} from './bot'
 import * as utils from './utils'
 import * as afx from './global'
-import * as uniconst from './uniconst'
-import * as depoDetector from './deposit_detector'
 import * as swapManager from './swap_manager'
 
 import assert from 'assert'
@@ -279,33 +277,6 @@ const processSettings = async (msg: any, database: any) => {
 
 		await instance.sendInfoMessage(sessionId, `✅ Buy slippage value has been updated to ${value}%`)
 		instance.executeCommand(stateData.sessionId, stateData.messageId, stateData.callbackQueryId, {c: OptionCode.MAIN_MYGAMES, k:0 })
-
-	} else if (stateNode.state === StateCode.WAIT_SET_WALLET_DEPOSIT_PAYER_ADDRESS) {
-
-		const value = msg.text.trim()
-		if (!value || value.length <= 0) {
-			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the value you entered is invalid. Please try again`)
-			return
-		}
-
-		if (!utils.isValidAddress(value)) {
-			await instance.sendInfoMessage(sessionId, `🚫 Sorry, the wallet address you entered is invalid. Please try again`)
-			return
-		}
-
-		stateData.payer = value
-
-
-		await instance.openMenu(sessionId, OptionCode.MONITOR_DEPOSIT, `🔎 Monitoring your SOL, ${afx.quoteToken.symbol} deposit for 
-
-Send the <b>any amount of SOL or ${afx.quoteToken.symbol}</b> from your wallet to the address shown as below
-Your wallet: <code>${value}</code> <i>(Payment From)</i>
-Deposit wallet: <code>${afx.get_treasury_wallet_address()}</code> <i>(Payment To)</i>
-
-⏱️ Time left to deposit - ${depoDetector.AUTO_DISPOSE_MINS} mins
-
-⚠️ Attention! 
-<i>Please ensure that you send the SOL or ${afx.quoteToken.symbol} token in a single transaction to avoid potential issues with your deposit. Sending payments in multiple transactions is not supported. Also, make sure to use the wallet address provided above for this payment, as the monitoring system won't be able to detect your transaction otherwise</i>`);
 
 	} else if (stateNode.state === StateCode.WAIT_SET_WALLET_DEPOSIT_X_AMOUNT) {
 

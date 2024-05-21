@@ -1,6 +1,3 @@
-
-
-import assert from 'assert';
 import dotenv from 'dotenv'
 dotenv.config()
 
@@ -8,9 +5,6 @@ import * as database from './db'
 import * as privateBot from './bot_private'
 import * as afx from './global'
 import * as utils from './utils'
-import * as uniconst from './uniconst'
-import * as gameLogic from './game_logic'
-
 
 import TelegramBot from 'node-telegram-bot-api'
 
@@ -525,193 +519,6 @@ Tap to copy the wallet address and send SOL and/or ${afx.quoteToken.symbol} to m
 	return { title: title, options: json };
 }
 
-export const json_games = async (sessionId: string, onlyLive: boolean) => {
-
-	const session = sessions.get(sessionId)
-	if (!session) {
-		return null
-	}
-
-	let rawResult: any = onlyLive ? await gameLogic.getLiveGames() : gameLogic.getMyGames(sessionId)
-	if (!rawResult || rawResult.msg !== gameLogic.ErrorMsg.SUCCESS) {
-		return
-	}
-
-	for (const game of rawResult.result) {
-
-	}
-
-
-	const title = `⬇️ ${onlyLive ? 'Live Games' : 'My Games'}:
-	
-Please choose the games below that you want to see in detail
-
-<a href='${afx.get_bot_link()}?start=ga_${0}'>1. NET will be over or under 300k in the next 6 hours?</a>
-<a href='${afx.get_bot_link()}?start=ga_1'>2. NET will be over or under 300k in the next 6 hours?</a>
-<a href='${afx.get_bot_link()}?start=ga_1'>3. NET will be over or under 300k in the next 6 hours?</a>
-<a href='${afx.get_bot_link()}?start=ga_1'>4. NET will be over or under 300k in the next 6 hours?</a>`
-
-	const itemData = sessionId
-	let json = [
-		[
-			json_buttonItem(sessionId, OptionCode.CLOSE, '✖️ Close')
-		],
-	]
-
-	if (!onlyLive) {
-		json.push([
-			json_buttonItem(sessionId, OptionCode.GAME_CREATE, '⚡ New Game')
-		])
-	}
-	return { title: title, options: json };
-}
-
-export const json_referral = async (sessionId: string) => {
-
-	const session = sessions.get(sessionId)
-	if (!session) {
-		return null
-	}
-
-	const referredCount = await database.countUsers({ referredBy: sessionId })
-	let { solAmount, tokenAmount } = await database.getRewardAmount(sessionId)
-
-	const title = `⬇️ Your Referral Dashboard:
-	  
-Your reflink: <code>${afx.get_bot_link()}?start=${session.referralCode}</code>
-
-Referrals: ${referredCount}
-Total earnings: <code>${utils.roundDecimal(solAmount, 8)} SOL</code>, <code>${utils.roundDecimal(tokenAmount, 8)} ${afx.quoteToken.symbol}</code> 
-
-You will receive rewards directly to your credit as soon as the users you referred get won in the game.
-
-Refer your friends and earn 1.5% of their earnings!
-
-<i>To receive referral rewards, you must activate your receiving wallet by depositing a small amount of SOL into your current wallet even it is just 1 lamport</i>`
-
-	const itemData = sessionId
-	let json = [
-		[
-			json_buttonItem(sessionId, OptionCode.CLOSE, '✖️ Close')
-		],
-
-	]
-	return { title: title, options: json };
-}
-
-export const json_game_detail = async (sessionId: string, gameId: number) => {
-
-	await gameLogic.getGame(gameId)
-	const title = `⬇️ Game #10292:
-	
-Title: NET will be over or under 300k in the next 6 hours? Bet up or down
-
-Total:
-🟢 Up: <code>301.21 SOL</code>, <code>401.08 ${afx.quoteToken.symbol}</code> (70%)
-🔴 Down: <code>301.21 SOL</code>, <code>401.08 ${afx.quoteToken.symbol}</code> (30%)
-
-You:
-🟢 Up: <code>30.1 SOL</code>, <code>1.08 ${afx.quoteToken.symbol}</code>
-🔴 Down: <code>3.1 SOL</code>, <code>4.8 ${afx.quoteToken.symbol}</code>
-
-Time:
-🔸 Open: <code>2024-2-23 12:23:00</code>
-🔹 Close: <code>2024-2-23 12:23:00</code>
-🔹 Settle: <code>2024-2-23 12:23:00</code>`
-
-	const itemData = sessionId
-	let json = [
-		[
-			json_buttonItem(sessionId, OptionCode.CLOSE, '✖️ Close')
-		],
-		[
-			json_buttonItem(itemData, OptionCode.GAME_BETTING_UP, '🟢 1 SOL'),
-			json_buttonItem(itemData, OptionCode.GAME_BETTING_UP, '🟢 2 SOL'),
-			json_buttonItem(itemData, OptionCode.GAME_BETTING_UP, '🟢 X SOL'),
-		],
-		[
-			json_buttonItem(itemData, OptionCode.GAME_BETTING_UP, `🟢 1 ${afx.quoteToken.symbol}`),
-			json_buttonItem(itemData, OptionCode.GAME_BETTING_UP, `🟢 2 ${afx.quoteToken.symbol}`),
-			json_buttonItem(itemData, OptionCode.GAME_BETTING_UP, `🟢 X ${afx.quoteToken.symbol}`),
-		],
-		[
-			json_buttonItem(itemData, OptionCode.GAME_PREV, '⬅️'),
-			json_buttonItem(itemData, OptionCode.TITLE, 'Other Games'),
-			json_buttonItem(itemData, OptionCode.GAME_NEXT, '➡️'),
-		],
-		[
-			json_buttonItem(itemData, OptionCode.GAME_BETTING_UP, '🔴 1 SOL'),
-			json_buttonItem(itemData, OptionCode.GAME_BETTING_UP, '🔴 2 SOL'),
-			json_buttonItem(itemData, OptionCode.GAME_BETTING_UP, '🔴 X SOL'),
-		],
-		[
-			json_buttonItem(itemData, OptionCode.GAME_BETTING_UP, `🔴 1 ${afx.quoteToken.symbol}`),
-			json_buttonItem(itemData, OptionCode.GAME_BETTING_UP, `🔴 2 ${afx.quoteToken.symbol}`),
-			json_buttonItem(itemData, OptionCode.GAME_BETTING_UP, `🔴 X ${afx.quoteToken.symbol}`),
-		],
-		[
-			json_buttonItem(itemData, OptionCode.MAIN_MYGAMES, 'More Games'),
-			json_buttonItem(sessionId, OptionCode.MAIN_REFRESH, 'Refresh'),
-		],
-	]
-	return { title: title, options: json };
-}
-
-export const json_help = async (sessionId: string) => {
-
-	const session = sessions.get(sessionId)
-	if (!session) {
-		return null
-	}
-
-	const title = `⬇️ Help:
-
-Initial Pot Calculation:
-Number of participants: 300
-User fee to create a game: 0.25 SOL
-Total pot (excluding fees): 300 participants * 0.35 SOL/participant = 105 SOL
-
-Each winner gets a share of the remaining pot, and their winnings are taxed 10%.
-Total pot (including fees): 99.75 (fees collected 10% on the winning side = 5.25) 
-House's Profit (10% of the Winning Side): 5.25
-Remaining Pot After House's Profit:
-Remaining pot = Total pot - House's profit = 99.75
-
-99.75x5% = user reward = 4.9875
-
-99.75 - 4.9875 = 94.7625
-Winning participants = 94.7625/ 150 = 0.63175 - 2x return. 
-
-Example Tiered Reward Structure for User Fee Reward:
-Tier 1: Pot size 0 - 100 SOL = 5% return for the user who made the game
-Tier 2: Pot size 101 - 200 SOL = 7% return for the user who made the game
-Tier 3: Pot size 201 - 300 SOL = 9% return for the user who made the game
-
-- fixed, sample game w calc example. however not using onlyfins as well, that will change it. and users will have varying amounts betted too`
-
-	const itemData = sessionId
-	let json = [
-		[
-			json_buttonItem(sessionId, OptionCode.CLOSE, '✖️ Close')
-		],
-
-	]
-	return { title: title, options: json };
-}
-
-
-
-export const json_info = async (sessionId: string, msg: string) => {
-
-	let json = [
-		[
-			json_buttonItem(sessionId, OptionCode.CLOSE, '✖️ Close')
-		],
-
-	]
-	return { title: msg, options: json };
-}
-
 export const json_confirm = async (sessionId: string, msg: string, btnCaption: string, btnId: number, itemData: string = '') => {
 
 	const session = sessions.get(sessionId)
@@ -766,7 +573,6 @@ export function showSessionLog(session: any) {
 }
 
 export const defaultConfig = {
-
 	vip: 0,
 }
 
@@ -875,9 +681,6 @@ export const executeCommand = async (chatid: string, _messageId: number | undefi
 	if (!session) {
 		return
 	}
-
-	//stateMap_clear();
-
 	let messageId = Number(_messageId ?? 0)
 	let callbackQueryId = _callbackQueryId ?? ''
 
@@ -913,35 +716,10 @@ ${process.env.BOT_TITLE} will create new Taxable token and present it's address 
 
 			await openConfirmMenu(stateData.sessionId, msg, 'Confirm', OptionCode.WALLET_IMPORT_KEY_CONFIRM)
 
-		} else if (cmd === OptionCode.MAIN_MYGAMES) {
-
-			// await removeMessage(sessionId, messageId)
-			const popup = parseInt(id)
-			const menu: any = await json_games(sessionId, false);
-
-			if (menu) {
-				if (popup)
-					await openMenu(chatid, OptionCode.MAIN_GAMES, menu.title, menu.options)
-				else
-					await switchMenu(chatid, messageId, menu.title, menu.options)
-			}
-
 		} else if (cmd === OptionCode.MAIN_WALLET) {
 
 			const popup = parseInt(id)
 			const menu: any = await json_wallet(sessionId);
-
-			if (menu) {
-				if (popup)
-					await openMenu(chatid, cmd, menu.title, menu.options)
-				else
-					await switchMenu(chatid, messageId, menu.title, menu.options)
-			}
-
-		} else if (cmd === OptionCode.MAIN_REFERRAL) {
-
-			const popup = parseInt(id)
-			const menu: any = await json_referral(sessionId);
 
 			if (menu) {
 				if (popup)
@@ -964,14 +742,6 @@ ${process.env.BOT_TITLE} will create new Taxable token and present it's address 
 			stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_WALLET_WITHDRAW_AMOUNT, stateData)
 
 		} else if (cmd == OptionCode.WALLET_DEPOSIT_SOL) {
-
-			// const msg = `Reply to this message with the your solana wallet address you want to deposit from`
-			// await sendReplyMessage(stateData.sessionId, msg);
-			// stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_WALLET_DEPOSIT_PAYER_ADDRESS, stateData)
-
-			// 
-			// await sendInfoMessage(sessionId, `To make deposit, send SOL or ${afx.quoteToken.symbol} to below address: <code>${process.env.TREASURY_WALLET}</code>`)
-
 			stateData.tokenDeposit = false
 
 			const msg = `Reply to this message with the your solana amount to make deposit`
@@ -1011,20 +781,6 @@ ${process.env.BOT_TITLE} will create new Taxable token and present it's address 
 			await removeMessage(sessionId, messageId)
 
 			await sendInfoMessage(sessionId, `Your request for creating a new game has been successfully sent. Please wait a few minutes until the admin approves it.`)
-
-		} else if (cmd === OptionCode.GAME_DETAIL) {
-
-			const gameId = parseInt(id)
-			const menu: any = await json_game_detail(sessionId, gameId);
-
-			if (menu) {
-				await openMenu(chatid, cmd, menu.title, menu.options)
-			}
-		} else if (cmd === OptionCode.GAME_CREATE) {
-
-			const msg = `Reply to this message with the game title you want to create new. The length must NOT be greater than 100`
-			await sendReplyMessage(stateData.sessionId, msg);
-			stateMap_setFocus(stateData.sessionId, StateCode.WAIT_SET_NEW_GAME_TITLE, stateData)
 
 		} else if (cmd === OptionCode.CLOSE) {
 

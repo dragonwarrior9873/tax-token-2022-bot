@@ -3,7 +3,6 @@ import axios from 'axios'
 import * as fs from 'fs'
 import assert from 'assert';
 import * as afx from './global'
-import { Concurrencer } from './concurrencer'
 import bs58 from "bs58";
 import * as bip39 from "bip39";
 import * as crypto from './aes'
@@ -198,67 +197,6 @@ export const limitString = (str: string, length: number = 8) => {
     return temp;
 }
 
-export const getTokenMetadata = async (address: string) => {
-
-    assert(afx.web3Conn)
-    
-    try {
-
-        const metaplex = Metaplex.make(afx.web3Conn);
-        const mintAddress = new PublicKey(address);
-
-        let name: string;
-        let symbol: string;
-        let logo: string;
-        let decimals: number;
-        let totalSupply: number;
-        let renounced: boolean;
-        let description: string;
-        let extensions: any;
-
-        const metadataAccount = metaplex
-            .nfts()
-            .pdas()
-            .metadata({ mint: mintAddress });
-
-        let infoObtainer = new Concurrencer()
-
-        const obtainer_index_token0 = infoObtainer.add(afx.web3Conn.getAccountInfo(metadataAccount))
-        const obtainer_index_token1 = infoObtainer.add(
-            (async ()  => {
-                try {
-                    return await getMint(afx.web3Conn, mintAddress) 
-                } catch (error) {
-                    console.log('PASSED!!!', error)
-                    return null
-                }
-            })())
-
-        await infoObtainer.wait()
-
-        const metadataAccountInfo = infoObtainer.getResult(obtainer_index_token0)
-        const mintInfo = infoObtainer.getResult(obtainer_index_token1)
-
-        if (metadataAccountInfo && mintInfo) {
-            const token: any = await metaplex.nfts().findByMint({ mintAddress: mintAddress });
-
-            name = token.name;
-            symbol = token.symbol;
-            logo = token.json?.image;
-            description = token.json?.description;
-            extensions = token.json?.extensions;
-            decimals = token.mint.decimals;
-            totalSupply = Number(mintInfo.supply / BigInt(10 ** decimals))
-            renounced = token.mint.mintAuthorityAddress ? false : true;
-            return { name, symbol, logo, decimals, address, totalSupply, description, extensions, renounced }
-        }
-        
-    } catch (error) {
-        console.log("utils.getTokenMetadata", error);
-    }
-
-    return null
-}
 
 export const getTimeStringUTC = (timestamp: Date) => {
 
@@ -595,28 +533,6 @@ export const getCurrentTimeTick = (ms: boolean = false) => {
 
     return Math.floor(new Date().getTime() / 1000)
 }
-
-// export async function getToken2022Metadata(mintPublicKey: PublicKey) {
-
-//     const [metadataPDA] = await PublicKey.findProgramAddress(
-//         [
-//             Buffer.from("metadata"),
-//             METADATA_2022_PROGRAM_ID.toBuffer(),
-//             mintPublicKey.toBuffer()
-//         ],
-//         METADATA_2022_PROGRAM_ID
-//     );
-
-//     // Derive the metadata account public key
-//     const metadata = await Metadata.fromAccountAddress(afx.web3Conn, metadataPDA);
-
-//     // Access metadata properties
-//     console.log("Metadata Name:", metadata.data.name);
-//     console.log("Metadata Symbol:", metadata.data.symbol);
-//     console.log("Metadata URI:", metadata.data.uri);
-// }
-
-
 
 export const encryptPKey = (text: string) => {
 
